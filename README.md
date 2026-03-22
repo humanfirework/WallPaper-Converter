@@ -1,4 +1,3 @@
-# WallPaper Converter
 
 一个简洁高效的壁纸格式转换工具，支持图片批量转换和 MPKG 视频提取。
 
@@ -17,10 +16,19 @@
 - **裁剪功能**：支持交互式裁剪，选择感兴趣的区域
 - **实时预览**：转换前可预览裁剪效果
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/28992528-089e-4a35-a939-4374c3841606" alt="开始界面" width="600"/>
+</p>
+
+
 ### MPKG 视频提取模式
 - **MPKG 解析**：解析 Wallpaper Engine 的壁纸包格式
 - **视频提取**：从 MPKG 文件中提取 MP4 视频
 - **批量处理**：支持批量提取多个文件
+
+<p align="center">
+   <img src="https://github.com/user-attachments/assets/4dd79e9e-c3e3-47a4-8d50-a8105342667f" alt="MPKG提取界面" width="600"/>
+</p>
 
 ## 界面预览
 
@@ -29,6 +37,10 @@
 - 清晰的功能分区
 - 流畅的交互动效
 - 响应式的布局设计
+
+<p align="center">
+   <img src="https://github.com/user-attachments/assets/4437edc4-41ea-4710-9b20-84343dbf2bb8" alt="预览图片界面" width="600"/>
+</p>
 
 ## 安装指南
 
@@ -170,3 +182,9 @@ git push origin v1.0.0
 - [PyQt5](https://www.riverbankcomputing.com/software/pyqt/) - GUI 框架
 - [Pillow](https://python-pillow.org/) - 图片处理库
 - [Wallpaper Engine](https://store.steampowered.com/app/431960/Wallpaper_Engine/) - 灵感来源
+
+## 如果觉得不错，可以给我加个鸡腿，谢谢，嘻嘻:
+
+<p align="center">
+      <img src="https://github.com/user-attachments/assets/a6d824d8-e237-44f0-b933-91f4daa8da48" alt="支持一下" height="480" width="320"/>
+</p>
