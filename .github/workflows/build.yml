@@ -1,0 +1,146 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: |
+          pip install pyinstaller
+
+      - name: Create build spec file
+        run: |
+          $specContent = @'
+          # -*- mode: python ; coding: utf-8 -*-
+
+          block_cipher = None
+
+          a = Analysis(
+              ['main.py'],
+              pathex=[],
+              binaries=[],
+              datas=[],
+              hiddenimports=['PyQt5', 'PIL', 'PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets'],
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[],
+              win_no_prefer_redirects=False,
+              win_private_assemblies=False,
+              cipher=block_cipher,
+              noarchive=False,
+          )
+
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              [],
+              exclude_binaries=True,
+              name='WallPaperConverter',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=True,
+              console=False,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+
+          coll = COLLECT(
+              exe,
+              a.binaries,
+              a.zipfiles,
+              a.datas,
+              strip=False,
+              upx=True,
+              upx_exclude=[],
+              name='WallPaperConverter',
+          )
+          '@
+          $specContent | Out-File -FilePath build.spec -Encoding utf8
+
+      - name: Build executable
+        run: |
+          pyinstaller build.spec --clean
+
+      - name: Get version tag
+        id: get_tag
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -match '^v') {
+            $version = $tag -replace '^v', ''
+          } else {
+            $version = "latest"
+          }
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          echo "IS_TAG=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create distribution folder
+        run: |
+          $version = "${{ env.VERSION }}"
+          $distPath = "dist\WallPaperConverter-$version"
+          New-Item -ItemType Directory -Path $distPath -Force
+
+          Copy-Item -Path "dist\WallPaperConverter\*" -Destination $distPath -Recurse -Force
+          Copy-Item -Path "README.md" -Destination $distPath -Force
+
+          Write-Host "Distribution folder created at: $distPath"
+
+      - name: Create zip archive
+        run: |
+          $version = "${{ env.VERSION }}"
+          $archiveName = "WallPaperConverter-$version-windows.zip"
+          Compress-Archive -Path "dist\WallPaperConverter-$version" -DestinationPath "dist\$archiveName" -Force
+          Write-Host "Archive created: dist\$archiveName"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WallPaperConverter-${{ env.VERSION }}
+          path: |
+            dist/WallPaperConverter-*
+            build.spec
+          retention-days: 30
