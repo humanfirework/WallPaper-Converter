@@ -7,7 +7,7 @@
   />
 </div>
 
-#一个简洁高效的壁纸格式转换工具，支持图片批量转换和 MPKG 视频提取。
+## 一个简洁高效的壁纸格式转换工具，支持图片批量转换和 MPKG 视频提取。
 
 <div align="center">
   <img src="https://img.shields.io/badge/Platform-Windows-blue" alt="Platform">
