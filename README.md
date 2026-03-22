@@ -186,5 +186,5 @@ git push origin v1.0.0
 ## 如果觉得不错，可以给我加个鸡腿，谢谢，嘻嘻:
 
 <p align="center">
-      <img src="https://github.com/user-attachments/assets/a6d824d8-e237-44f0-b933-91f4daa8da48" alt="支持一下" height="480" width="320"/>
+      <img src="https://github.com/user-attachments/assets/a6d824d8-e237-44f0-b933-91f4daa8da48" alt="支持一下" height="352" width="256"/>
 </p>
