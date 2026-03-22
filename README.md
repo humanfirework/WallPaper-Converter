@@ -1,10 +1,19 @@
 
-一个简洁高效的壁纸格式转换工具，支持图片批量转换和 MPKG 视频提取。
+<div align="center">
+  <img 
+    src="https://github.com/user-attachments/assets/11c9323d-0396-4c2d-8157-5c9548e38b68" 
+    alt="小骑士" 
+    width="320"
+  />
+</div>
 
-![Platform](https://img.shields.io/badge/Platform-Windows-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-green)
-![License](https://img.shields.io/badge/License-MIT-orange)
+#一个简洁高效的壁纸格式转换工具，支持图片批量转换和 MPKG 视频提取。
 
+<div align="center">
+  <img src="https://img.shields.io/badge/Platform-Windows-blue" alt="Platform">
+  <img src="https://img.shields.io/badge/Python-3.8+-green" alt="Python">
+  <img src="https://img.shields.io/badge/License-MIT-orange" alt="License">
+</div>
 ## 功能特性
 
 ### 图片转换模式
