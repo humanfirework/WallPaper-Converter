@@ -1,10 +1,22 @@
-# WallPaper Converter
+<div align="center">
+  <img 
+    src="https://github.com/user-attachments/assets/11c9323d-0396-4c2d-8157-5c9548e38b68" 
+    alt="小骑士" 
+    width="320"
+  />
+</div>
 
+<<<<<<< HEAD
 一个简洁高效的壁纸格式转换工具，支持图片批量转换、MPKG 视频提取和 NCM 音乐格式转换。
+=======
+## 一个简洁高效的Wallpaper壁纸格式转换工具，支持图片批量转换和 MPKG 视频提取。
+>>>>>>> 73db444531bc708fbd4a030d8054459e31048bcd
 
-![Platform](https://img.shields.io/badge/Platform-Windows-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-green)
-![License](https://img.shields.io/badge/License-MIT-orange)
+<div align="center">
+  <img src="https://img.shields.io/badge/Platform-Windows-blue" alt="Platform">
+  <img src="https://img.shields.io/badge/Python-3.8+-green" alt="Python">
+  <img src="https://img.shields.io/badge/License-MIT-orange" alt="License">
+</div>
 
 ## 功能特性
 
@@ -17,15 +29,26 @@
 - **裁剪功能**：支持交互式裁剪，选择感兴趣的区域
 - **实时预览**：转换前可预览裁剪效果
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/28992528-089e-4a35-a939-4374c3841606" alt="开始界面" width="600"/>
+</p>
+
+
 ### MPKG 视频提取模式
 - **MPKG 解析**：解析 Wallpaper Engine 的壁纸包格式
 - **视频提取**：从 MPKG 文件中提取 MP4 视频
 - **批量处理**：支持批量提取多个文件
 
+<<<<<<< HEAD
 ### NCM 音乐转换模式
 - **NCM 解密**：支持解密网易云音乐加密格式(.ncm)文件
 - **格式转换**：可将 NCM 文件转换为 MP3 或 FLAC 格式
 - **批量处理**：支持批量转换多个文件
+=======
+<p align="center">
+   <img src="https://github.com/user-attachments/assets/4dd79e9e-c3e3-47a4-8d50-a8105342667f" alt="MPKG提取界面" width="600"/>
+</p>
+>>>>>>> 73db444531bc708fbd4a030d8054459e31048bcd
 
 ## 界面预览
 
@@ -34,6 +57,10 @@
 - 清晰的功能分区
 - 流畅的交互动效
 - 响应式的布局设计
+
+<p align="center">
+   <img src="https://github.com/user-attachments/assets/4437edc4-41ea-4710-9b20-84343dbf2bb8" alt="预览图片界面" width="600"/>
+</p>
 
 ## 安装指南
 
@@ -171,12 +198,16 @@ git push origin v1.1.0
 
 ## 更新日志
 
+<<<<<<< HEAD
 ### v1.1.0 (2026-03-24)
 - 新增 NCM 音乐格式转换功能
 - 支持网易云音乐加密格式解密转换
 - 优化批量处理性能
 
 ### v1.0.0 (2024)
+=======
+### v1.0.0 (2026.3.21)
+>>>>>>> 73db444531bc708fbd4a030d8054459e31048bcd
 - 初始版本发布
 - 支持图片格式转换
 - 支持 MPKG 视频提取
@@ -192,3 +223,9 @@ git push origin v1.1.0
 - [Pillow](https://python-pillow.org/) - 图片处理库
 - [ncmdump](https://github.com/AnotherZhang/ncmdump) - NCM 文件解密
 - [Wallpaper Engine](https://store.steampowered.com/app/431960/Wallpaper_Engine/) - 灵感来源
+
+## 如果觉得不错，可以给我加个鸡腿，谢谢，嘻嘻:
+
+<p align="center">
+      <img src="https://github.com/user-attachments/assets/a6d824d8-e237-44f0-b933-91f4daa8da48" alt="支持一下" height="352" width="256"/>
+</p>
