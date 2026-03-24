@@ -38,6 +38,9 @@ from core.image_utils import format_file_size, get_image_info
 from core.mpkg_converter import (
     batch_mpkg_to_mp4, is_mpkg_file
 )
+from core.ncm_converter import (
+    batch_ncm_to_audio, is_ncm_file, get_ncm_info
+)
 from ui.preview_dialog import PreviewDialog
 
 # Windows API 相关常量用于亚克力效果
@@ -670,6 +673,27 @@ class MPKGConvertWorker(QThread):
         self.finished.emit(success, fail, errors)
 
 
+class NCMConvertWorker(QThread):
+    """NCM 转换工作线程"""
+    progress = pyqtSignal(int, int, str)
+    finished = pyqtSignal(int, int, list)
+
+    def __init__(self, files, output_dir, output_format='mp3'):
+        super().__init__()
+        self.files = files
+        self.output_dir = output_dir
+        self.output_format = output_format
+
+    def run(self):
+        success, fail, errors = batch_ncm_to_audio(
+            self.files,
+            self.output_dir,
+            self.output_format,
+            lambda c, t, m: self.progress.emit(c, t, m)
+        )
+        self.finished.emit(success, fail, errors)
+
+
 class FileListWidget(QListWidget):
     """支持拖拽的文件列表"""
     
@@ -738,6 +762,17 @@ class FileListWidget(QListWidget):
                         for filename in filenames:
                             filepath = os.path.join(root, filename)
                             if is_mpkg_file(filepath):
+                                files.append(filepath)
+            elif self._mode == 'ncm':
+                # NCM 模式
+                if os.path.isfile(path):
+                    if is_ncm_file(path):
+                        files.append(path)
+                elif os.path.isdir(path):
+                    for root, _, filenames in os.walk(path):
+                        for filename in filenames:
+                            filepath = os.path.join(root, filename)
+                            if is_ncm_file(filepath):
                                 files.append(filepath)
             else:
                 # 图片模式
@@ -824,6 +859,7 @@ class MainWindow(QMainWindow):
         
         self.image_files: List[str] = []
         self.mpkg_files: List[str] = []
+        self.ncm_files: List[str] = []
         self.worker = None
         self.crop_rects: dict = {}
         
@@ -1024,6 +1060,24 @@ class MainWindow(QMainWindow):
         self.mode_group.addButton(self.mpkg_mode_btn, 1)
         mode_layout.addWidget(self.mpkg_mode_btn)
         
+        self.ncm_mode_btn = QRadioButton("NCM 转 MP3")
+        self.ncm_mode_btn.setStyleSheet("""
+            QRadioButton {
+                background: white;
+                border-radius: 6px;
+                padding: 8px 24px;
+                font-weight: 600;
+                color: #007aff;
+            }
+            QRadioButton:!checked {
+                background: transparent;
+                color: #86868b;
+            }
+            QRadioButton::indicator { width: 0; height: 0; }
+        """)
+        self.mode_group.addButton(self.ncm_mode_btn, 2)
+        mode_layout.addWidget(self.ncm_mode_btn)
+        
         layout.addWidget(mode_container)
         
         # 标题区域
@@ -1101,6 +1155,10 @@ class MainWindow(QMainWindow):
         # MPKG 转换设置面板
         mpkg_settings = self.create_mpkg_settings()
         self.settings_stack.addWidget(mpkg_settings)
+        
+        # NCM 转换设置面板
+        ncm_settings = self.create_ncm_settings()
+        self.settings_stack.addWidget(ncm_settings)
         
         layout.addWidget(self.settings_stack)
         
@@ -1374,6 +1432,104 @@ class MainWindow(QMainWindow):
         
         return main_widget
 
+    def create_ncm_settings(self) -> QWidget:
+        """创建 NCM 转换设置面板"""
+        main_widget = QWidget()
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(12)
+        
+        # 标题
+        title_label = QLabel("NCM 转 MP3")
+        title_label.setObjectName("titleLabel")
+        main_layout.addWidget(title_label)
+        
+        # 滚动区域
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet("background-color: #f5f5f7;")
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 8, 0)
+        scroll_layout.setSpacing(20)
+        
+        # 说明卡片
+        info_card = SettingsCard("关于 NCM 格式")
+        info_text = QLabel(
+            "NCM 是网易云音乐加密格式，\n"
+            "此工具可以将 NCM 解密并转换为 MP3 格式。"
+        )
+        info_text.setWordWrap(True)
+        info_text.setObjectName("subtitleLabel")
+        info_card.addWidget(info_text)
+        scroll_layout.addWidget(info_card)
+        
+        # 输出格式卡片
+        format_card = SettingsCard("输出格式")
+        format_layout = QHBoxLayout()
+        format_layout.setSpacing(12)
+        
+        format_label = QLabel("选择格式")
+        format_label.setMinimumWidth(80)
+        format_layout.addWidget(format_label)
+        
+        self.ncm_format_combo = QComboBox()
+        self.ncm_format_combo.addItems(['mp3', 'flac'])
+        self.ncm_format_combo.setMinimumWidth(120)
+        format_layout.addWidget(self.ncm_format_combo, 1)
+        
+        format_layout.addStretch()
+        format_card.addLayout(format_layout)
+        scroll_layout.addWidget(format_card)
+        
+        # 输出目录卡片
+        output_card = SettingsCard("输出目录")
+        output_layout = QHBoxLayout()
+        output_layout.setSpacing(12)
+        
+        output_label = QLabel("目录")
+        output_label.setMinimumWidth(50)
+        output_layout.addWidget(output_label)
+        
+        self.ncm_output_path_label = QLabel("未选择")
+        self.ncm_output_path_label.setStyleSheet("""
+            background: #f5f5f7;
+            border-radius: 8px;
+            padding: 10px;
+            color: #86868b;
+        """)
+        output_layout.addWidget(self.ncm_output_path_label, 1)
+        
+        browse_btn = ModernButton("浏览")
+        browse_btn.clicked.connect(self.browse_ncm_output_dir)
+        output_layout.addWidget(browse_btn)
+        output_card.addLayout(output_layout)
+        scroll_layout.addWidget(output_card)
+        
+        # 进度区域
+        self.ncm_progress_bar = QProgressBar()
+        self.ncm_progress_bar.setVisible(False)
+        scroll_layout.addWidget(self.ncm_progress_bar)
+        
+        self.ncm_status_label = QLabel()
+        self.ncm_status_label.setAlignment(Qt.AlignCenter)
+        self.ncm_status_label.setObjectName("subtitleLabel")
+        scroll_layout.addWidget(self.ncm_status_label)
+        
+        scroll_layout.addStretch()
+        
+        scroll.setWidget(scroll_content)
+        main_layout.addWidget(scroll, 1)
+        
+        # 转换按钮
+        self.ncm_convert_btn = ModernButton("开始转换", is_primary=True)
+        self.ncm_convert_btn.clicked.connect(self.start_ncm_convert)
+        main_layout.addWidget(self.ncm_convert_btn)
+        
+        return main_widget
+
     def apply_shadow_effects(self):
         """应用轻量级阴影效果"""
         # 简约风格使用更轻的阴影
@@ -1400,13 +1556,21 @@ class MainWindow(QMainWindow):
             self.preview_btn.setVisible(True)
             # 切换到图片模式的文件列表
             self.refresh_file_list_for_mode()
-        else:
+        elif button == self.mpkg_mode_btn:
             self.settings_stack.setCurrentIndex(1)
             self.file_list.set_mode('mpkg')
             self.title_label.setText("待转换 MPKG 文件")
             self.subtitle_label.setText("拖拽 MPKG 文件或文件夹到下方区域，或点击按钮添加")
             self.preview_btn.setVisible(False)
             # 切换到 MPKG 模式的文件列表
+            self.refresh_file_list_for_mode()
+        else:
+            self.settings_stack.setCurrentIndex(2)
+            self.file_list.set_mode('ncm')
+            self.title_label.setText("待转换 NCM 文件")
+            self.subtitle_label.setText("拖拽 NCM 文件或文件夹到下方区域，或点击按钮添加")
+            self.preview_btn.setVisible(False)
+            # 切换到 NCM 模式的文件列表
             self.refresh_file_list_for_mode()
 
     def refresh_file_list_for_mode(self):
@@ -1421,11 +1585,21 @@ class MainWindow(QMainWindow):
                 else:
                     item_text = f"{os.path.basename(filepath)}"
                 self.file_list.addItem(item_text)
-        else:
+        elif self.mpkg_mode_btn.isChecked():
             files = self.mpkg_files
             for filepath in files:
                 size = os.path.getsize(filepath)
                 item_text = f"{os.path.basename(filepath)}  •  {format_file_size(size)}"
+                self.file_list.addItem(item_text)
+        else:
+            # NCM 模式
+            files = self.ncm_files
+            for filepath in files:
+                info = get_ncm_info(filepath)
+                if info:
+                    item_text = f"{os.path.basename(filepath)}  •  {format_file_size(info['size'])}"
+                else:
+                    item_text = f"{os.path.basename(filepath)}"
                 self.file_list.addItem(item_text)
         self.update_file_count()
 
@@ -1436,10 +1610,15 @@ class MainWindow(QMainWindow):
             files, _ = QFileDialog.getOpenFileNames(
                 self, "选择图片文件", "", filter_str
             )
-        else:
+        elif self.mpkg_mode_btn.isChecked():
             filter_str = "MPKG 文件 (*.mpkg)"
             files, _ = QFileDialog.getOpenFileNames(
                 self, "选择 MPKG 文件", "", filter_str
+            )
+        else:
+            filter_str = "NCM 文件 (*.ncm)"
+            files, _ = QFileDialog.getOpenFileNames(
+                self, "选择 NCM 文件", "", filter_str
             )
         if files:
             self.add_files_to_list(files)
@@ -1455,8 +1634,11 @@ class MainWindow(QMainWindow):
                     if self.image_mode_btn.isChecked():
                         if is_supported_file(filepath):
                             files.append(filepath)
-                    else:
+                    elif self.mpkg_mode_btn.isChecked():
                         if is_mpkg_file(filepath):
+                            files.append(filepath)
+                    else:
+                        if is_ncm_file(filepath):
                             files.append(filepath)
             if files:
                 self.add_files_to_list(files)
@@ -1464,7 +1646,14 @@ class MainWindow(QMainWindow):
     def add_files_to_list(self, files: List[str]):
         """添加文件到列表"""
         is_image_mode = self.image_mode_btn.isChecked()
-        target_list = self.image_files if is_image_mode else self.mpkg_files
+        is_mpkg_mode = self.mpkg_mode_btn.isChecked()
+        
+        if is_image_mode:
+            target_list = self.image_files
+        elif is_mpkg_mode:
+            target_list = self.mpkg_files
+        else:
+            target_list = self.ncm_files
         
         new_items = []
         for filepath in files:
@@ -1476,9 +1665,16 @@ class MainWindow(QMainWindow):
                         item_text = f"{os.path.basename(filepath)}  •  {info['width']}×{info['height']}  •  {format_file_size(info['size'])}"
                     else:
                         item_text = f"{os.path.basename(filepath)}"
-                else:
+                elif is_mpkg_mode:
                     size = os.path.getsize(filepath)
                     item_text = f"{os.path.basename(filepath)}  •  {format_file_size(size)}"
+                else:
+                    # NCM 模式
+                    info = get_ncm_info(filepath)
+                    if info:
+                        item_text = f"{os.path.basename(filepath)}  •  {format_file_size(info['size'])}"
+                    else:
+                        item_text = f"{os.path.basename(filepath)}"
                 
                 item = QListWidgetItem(item_text)
                 self.file_list.addItem(item)
@@ -1511,8 +1707,10 @@ class MainWindow(QMainWindow):
             self.image_files.clear()
             self.crop_rects.clear()
             self.update_crop_info()
-        else:
+        elif self.mpkg_mode_btn.isChecked():
             self.mpkg_files.clear()
+        else:
+            self.ncm_files.clear()
         self.file_list.clear()
         self.update_file_count()
     
@@ -1579,8 +1777,10 @@ class MainWindow(QMainWindow):
         """更新文件计数"""
         if self.image_mode_btn.isChecked():
             count = len(self.image_files)
-        else:
+        elif self.mpkg_mode_btn.isChecked():
             count = len(self.mpkg_files)
+        else:
+            count = len(self.ncm_files)
         self.file_count_label.setText(f"共 {count} 个文件")
 
     def browse_output_dir(self):
@@ -1733,6 +1933,76 @@ class MainWindow(QMainWindow):
         else:
             self.mpkg_status_label.setText(f"完成：成功 {success}，失败 {fail}")
             self.mpkg_status_label.setStyleSheet("color: #f57c00; font-size: 13px; font-weight: 600;")
+            error_msg = f"成功: {success}, 失败: {fail}\n\n失败原因:\n" + "\n".join(errors[:10])
+            if len(errors) > 10:
+                error_msg += f"\n... 还有 {len(errors) - 10} 个错误"
+            QMessageBox.warning(self, "完成", error_msg)
+
+    def browse_ncm_output_dir(self):
+        """浏览 NCM 输出目录"""
+        folder = QFileDialog.getExistingDirectory(self, "选择输出目录")
+        if folder:
+            self.ncm_output_path_label.setText(folder)
+            self.ncm_output_path_label.setStyleSheet("""
+                background: #e8f5e9;
+                border-radius: 8px;
+                padding: 10px;
+                color: #2e7d32;
+            """)
+
+    def start_ncm_convert(self):
+        """开始 NCM 转换"""
+        if not self.ncm_files:
+            QMessageBox.warning(self, "提示", "请先添加要转换的 NCM 文件")
+            return
+        
+        output_dir = self.ncm_output_path_label.text()
+        if output_dir == "未选择":
+            QMessageBox.warning(self, "提示", "请选择输出目录")
+            return
+        
+        output_format = self.ncm_format_combo.currentText()
+        
+        self.ncm_convert_btn.setEnabled(False)
+        self.ncm_convert_btn.setText("转换中...")
+        self.ncm_progress_bar.setVisible(True)
+        self.ncm_progress_bar.setValue(0)
+        self.ncm_progress_bar.setMaximum(len(self.ncm_files))
+        self.ncm_status_label.setText("正在准备转换...")
+        
+        self.worker = NCMConvertWorker(self.ncm_files, output_dir, output_format)
+        self.worker.progress.connect(self.on_ncm_progress)
+        self.worker.finished.connect(self.on_ncm_finished)
+        self.worker.start()
+
+    def on_ncm_progress(self, current: int, total: int, message: str):
+        """NCM 转换进度更新（带动画）"""
+        if hasattr(self, '_ncm_progress_animation'):
+            self._ncm_progress_animation.stop()
+        
+        self._ncm_progress_animation = QPropertyAnimation(self.ncm_progress_bar, b"value")
+        self._ncm_progress_animation.setDuration(200)
+        self._ncm_progress_animation.setStartValue(self.ncm_progress_bar.value())
+        self._ncm_progress_animation.setEndValue(current)
+        self._ncm_progress_animation.setEasingCurve(QEasingCurve.OutCubic)
+        self._ncm_progress_animation.start()
+        
+        percent = int(current / total * 100) if total > 0 else 0
+        self.ncm_status_label.setText(f"正在处理 {current}/{total} ({percent}%) - {message}")
+
+    def on_ncm_finished(self, success: int, fail: int, errors: List[str]):
+        """NCM 转换完成"""
+        self.ncm_convert_btn.setEnabled(True)
+        self.ncm_convert_btn.setText("开始转换")
+        self.ncm_progress_bar.setVisible(False)
+        
+        if fail == 0:
+            self.ncm_status_label.setText(f"✓ 转换完成！成功处理 {success} 个文件")
+            self.ncm_status_label.setStyleSheet("color: #2e7d32; font-size: 13px; font-weight: 600;")
+            QMessageBox.information(self, "完成", f"成功转换 {success} 个音频文件！")
+        else:
+            self.ncm_status_label.setText(f"完成：成功 {success}，失败 {fail}")
+            self.ncm_status_label.setStyleSheet("color: #f57c00; font-size: 13px; font-weight: 600;")
             error_msg = f"成功: {success}, 失败: {fail}\n\n失败原因:\n" + "\n".join(errors[:10])
             if len(errors) > 10:
                 error_msg += f"\n... 还有 {len(errors) - 10} 个错误"

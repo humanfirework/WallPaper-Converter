@@ -40,47 +40,6 @@ jobs:
         run: |
           pip install pyinstaller
 
-      - name: Generate application icon
-        run: |
-          $iconScript = @'
-          from PIL import Image, ImageDraw
-          import os
-
-          size = 256
-          img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-          draw = ImageDraw.Draw(img)
-
-          # 主色背景
-          primary_color = (37, 99, 235)
-          draw.rounded_rectangle([20, 20, size-20, size-20], radius=45, fill=primary_color)
-          draw.rounded_rectangle([30, 30, size-30, size-30], radius=35, fill=(255,255,255,30))
-
-          # 图片图标
-          draw.rounded_rectangle([60, 60, size-60, size//2+10], radius=12, outline='white', width=3)
-          # 山脉
-          draw.polygon([(80, size//2-5), (110, 90), (140, size//2-5)], fill=(255,255,255,150))
-          # 太阳
-          draw.ellipse([170, 75, 190, 95], fill='white')
-
-          # 转换箭头
-          cy = size//2 + 30
-          draw.polygon([(128-20, cy-25), (128, cy-40), (128+20, cy-25), (128+20, cy-10), (128, cy-20), (128-20, cy-10)], fill='white')
-          draw.polygon([(128-20, cy+10), (128, cy-5), (128+20, cy+10), (128+20, cy+25), (128, cy+15), (128-20, cy+25)], fill=(255,255,255,180))
-
-          # 文件图标
-          draw.rounded_rectangle([60, size//2+55, size-60, size-70], radius=12, outline='white', width=3)
-          for i in range(3):
-              y = size//2+75 + i*18
-              w = 60 - i*15
-              draw.line([(80, y), (80+w, y)], fill=(255,255,255,150), width=3)
-
-          img.save('app_icon.png')
-          img.save('app_icon.ico', format='ICO', sizes=[(s, s) for s in [16,32,48,64,128,256]])
-          print('Icon generated successfully')
-          '@
-          $iconScript | Out-File -FilePath generate_icon.py -Encoding utf8
-          python generate_icon.py
-
       - name: Create build spec file
         run: |
           $specContent = @'
