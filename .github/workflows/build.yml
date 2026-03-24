@@ -36,10 +36,6 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Install PyInstaller
-        run: |
-          pip install pyinstaller
-
       - name: Create build spec file
         run: |
           $specContent = @'
@@ -52,7 +48,7 @@ jobs:
               pathex=[],
               binaries=[],
               datas=[],
-              hiddenimports=['PyQt5', 'PIL', 'PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets'],
+              hiddenimports=['PyQt5', 'PIL', 'PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets', 'ncmdump'],
               hookspath=[],
               hooksconfig={},
               runtime_hooks=[],
