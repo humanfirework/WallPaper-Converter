@@ -25,7 +25,7 @@ from PyQt5.QtCore import (
 from PyQt5.QtGui import (
     QFont, QColor, QDragEnterEvent, QDropEvent, QPalette, 
     QLinearGradient, QPainter, QBrush, QPen, QRadialGradient, QPixmap,
-    QPainterPath, QTransform
+    QPainterPath, QTransform, QConicalGradient
 )
 
 # 添加父目录到路径 (确保 core 模块可导入)
@@ -585,6 +585,108 @@ class ModernButton(QPushButton):
         self.shadow.setEnabled(False)
         super().leaveEvent(event)
 
+
+class NavButton(QPushButton):
+    """高级导航按钮（带图标和动画效果）"""
+    def __init__(self, icon_text, title, subtitle, parent=None):
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFixedHeight(72)
+        
+        self.icon_text = icon_text
+        self.title = title
+        self.subtitle = subtitle
+        
+        # 阴影效果
+        self.shadow = QGraphicsDropShadowEffect(self)
+        self.shadow.setBlurRadius(20)
+        self.shadow.setOffset(0, 4)
+        self.shadow.setColor(QColor(0, 122, 255, 30))
+        self.setGraphicsEffect(self.shadow)
+        self.shadow.setEnabled(False)
+        
+        self._update_style()
+    
+    def _update_style(self):
+        """更新样式"""
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background: {DESIGN_SYSTEM['colors']['surface']};
+                border: 1px solid {DESIGN_SYSTEM['colors']['border']};
+                border-radius: {DESIGN_SYSTEM['radius']['lg']};
+                text-align: left;
+                padding: 12px 16px;
+            }}
+            QPushButton:hover {{
+                background: {DESIGN_SYSTEM['colors']['overlay']};
+                border-color: {DESIGN_SYSTEM['colors']['border_hover']};
+            }}
+            QPushButton:checked {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(0, 122, 255, 0.1),
+                    stop:1 rgba(0, 122, 255, 0.05));
+                border: 2px solid {DESIGN_SYSTEM['colors']['primary']};
+            }}
+        """)
+    
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.TextAntialiasing)
+        
+        # 绘制图标背景
+        icon_size = 44
+        icon_x = 16
+        icon_y = (self.height() - icon_size) // 2
+        
+        if self.isChecked():
+            # 选中状态的渐变背景
+            gradient = QLinearGradient(icon_x, icon_y, icon_x + icon_size, icon_y + icon_size)
+            gradient.setColorAt(0, QColor(0, 122, 255))
+            gradient.setColorAt(1, QColor(88, 86, 214))
+            painter.setBrush(QBrush(gradient))
+        else:
+            # 未选中状态的灰色背景
+            painter.setBrush(QColor(240, 240, 242))
+        
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(icon_x, icon_y, icon_size, icon_size, 10, 10)
+        
+        # 绘制图标文字
+        painter.setPen(Qt.white if self.isChecked() else QColor(120, 120, 128))
+        painter.setFont(QFont("Microsoft YaHei", 14, QFont.Bold))
+        painter.drawText(icon_x, icon_y, icon_size, icon_size, Qt.AlignCenter, self.icon_text)
+        
+        # 绘制标题
+        title_x = icon_x + icon_size + 12
+        painter.setPen(QColor(29, 29, 31) if self.isChecked() else QColor(60, 60, 67))
+        painter.setFont(QFont("Microsoft YaHei", 13, QFont.Bold))
+        painter.drawText(title_x, 16, 200, 22, Qt.AlignLeft | Qt.AlignVCenter, self.title)
+        
+        # 绘制副标题
+        painter.setPen(QColor(134, 134, 139))
+        painter.setFont(QFont("Microsoft YaHei", 10))
+        painter.drawText(title_x, 38, 200, 18, Qt.AlignLeft | Qt.AlignVCenter, self.subtitle)
+        
+        # 绘制右侧指示器
+        if self.isChecked():
+            indicator_x = self.width() - 20
+            indicator_y = self.height() // 2
+            painter.setBrush(QColor(0, 122, 255))
+            painter.drawEllipse(indicator_x - 3, indicator_y - 3, 6, 6)
+    
+    def enterEvent(self, event):
+        if not self.isChecked():
+            self.shadow.setEnabled(True)
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        self.shadow.setEnabled(False)
+        super().leaveEvent(event)
+
+
 class SettingsCard(QFrame):
     """设置卡片容器（增强层次感）"""
     def __init__(self, title, parent=None):
@@ -1014,71 +1116,53 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(16)
         
-        # 模式切换 - 使用标签页风格
-        mode_container = QWidget()
-        mode_container.setStyleSheet("background: #f5f5f7; border-radius: 10px;")
-        mode_layout = QHBoxLayout(mode_container)
-        mode_layout.setContentsMargins(4, 4, 4, 4)
-        mode_layout.setSpacing(4)
+        # 应用标题
+        app_title = QLabel("WallPaper Converter")
+        app_title.setStyleSheet("""
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d1d1f;
+            padding-bottom: 8px;
+        """)
+        layout.addWidget(app_title)
+        
+        # 分隔线
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setStyleSheet("background-color: #e5e5ea; max-height: 1px;")
+        layout.addWidget(separator)
+        
+        # 高级导航按钮组
+        nav_container = QWidget()
+        nav_layout = QVBoxLayout(nav_container)
+        nav_layout.setContentsMargins(0, 8, 0, 8)
+        nav_layout.setSpacing(8)
         
         self.mode_group = QButtonGroup(self)
         
-        self.image_mode_btn = QRadioButton("图片转换")
+        # 图片转换按钮
+        self.image_mode_btn = NavButton("图", "图片转换", "PNG/JPG/WebP 格式转换")
         self.image_mode_btn.setChecked(True)
-        self.image_mode_btn.setStyleSheet("""
-            QRadioButton {
-                background: white;
-                border-radius: 6px;
-                padding: 8px 24px;
-                font-weight: 600;
-                color: #007aff;
-            }
-            QRadioButton:!checked {
-                background: transparent;
-                color: #86868b;
-            }
-            QRadioButton::indicator { width: 0; height: 0; }
-        """)
         self.mode_group.addButton(self.image_mode_btn, 0)
-        mode_layout.addWidget(self.image_mode_btn)
+        nav_layout.addWidget(self.image_mode_btn)
         
-        self.mpkg_mode_btn = QRadioButton("MPKG 转 MP4")
-        self.mpkg_mode_btn.setStyleSheet("""
-            QRadioButton {
-                background: white;
-                border-radius: 6px;
-                padding: 8px 24px;
-                font-weight: 600;
-                color: #007aff;
-            }
-            QRadioButton:!checked {
-                background: transparent;
-                color: #86868b;
-            }
-            QRadioButton::indicator { width: 0; height: 0; }
-        """)
+        # MPKG 转换按钮
+        self.mpkg_mode_btn = NavButton("影", "MPKG 转 MP4", "提取 Wallpaper Engine 视频")
         self.mode_group.addButton(self.mpkg_mode_btn, 1)
-        mode_layout.addWidget(self.mpkg_mode_btn)
+        nav_layout.addWidget(self.mpkg_mode_btn)
         
-        self.ncm_mode_btn = QRadioButton("NCM 转 MP3")
-        self.ncm_mode_btn.setStyleSheet("""
-            QRadioButton {
-                background: white;
-                border-radius: 6px;
-                padding: 8px 24px;
-                font-weight: 600;
-                color: #007aff;
-            }
-            QRadioButton:!checked {
-                background: transparent;
-                color: #86868b;
-            }
-            QRadioButton::indicator { width: 0; height: 0; }
-        """)
+        # NCM 转换按钮
+        self.ncm_mode_btn = NavButton("乐", "NCM 转 MP3", "网易云音乐格式解密")
         self.mode_group.addButton(self.ncm_mode_btn, 2)
-        mode_layout.addWidget(self.ncm_mode_btn)
+        nav_layout.addWidget(self.ncm_mode_btn)
         
-        layout.addWidget(mode_container)
+        layout.addWidget(nav_container)
+        
+        # 分隔线
+        separator2 = QFrame()
+        separator2.setFrameShape(QFrame.HLine)
+        separator2.setStyleSheet("background-color: #e5e5ea; max-height: 1px;")
+        layout.addWidget(separator2)
         
         # 标题区域
         self.title_label = QLabel("待转换图片")
@@ -2009,42 +2093,207 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "完成", error_msg)
 
 
+class AnimatedSplashScreen(QSplashScreen):
+    """高级动画启动画面"""
+    def __init__(self):
+        # 创建更大的启动画面
+        self.splash_w, self.splash_h = 480, 320
+        splash_pix = QPixmap(self.splash_w, self.splash_h)
+        splash_pix.fill(Qt.transparent)
+        
+        super().__init__(splash_pix, Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        
+        # 动画属性
+        self._progress = 0
+        self._glow_offset = 0
+        
+        # 创建定时器用于动画
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._update_animation)
+        self._timer.start(16)  # ~60fps
+        
+        # 绘制初始画面
+        self._draw_splash()
+    
+    def _draw_splash(self):
+        """绘制启动画面"""
+        pixmap = QPixmap(self.splash_w, self.splash_h)
+        pixmap.fill(Qt.transparent)
+        
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.TextAntialiasing)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        
+        # 绘制毛玻璃背景效果
+        self._draw_glass_background(painter)
+        
+        # 绘制发光边框
+        self._draw_glow_border(painter)
+        
+        # 绘制主图标/Logo
+        self._draw_logo(painter)
+        
+        # 绘制标题
+        self._draw_title(painter)
+        
+        # 绘制进度条
+        self._draw_progress(painter)
+        
+        painter.end()
+        self.setPixmap(pixmap)
+    
+    def _draw_glass_background(self, painter):
+        """绘制毛玻璃背景"""
+        # 主背景 - 渐变
+        gradient = QLinearGradient(0, 0, self.splash_w, self.splash_h)
+        gradient.setColorAt(0, QColor(250, 250, 252))
+        gradient.setColorAt(0.5, QColor(245, 245, 247))
+        gradient.setColorAt(1, QColor(240, 240, 242))
+        
+        bg_path = QPainterPath()
+        bg_path.addRoundedRect(8, 8, self.splash_w-16, self.splash_h-16, 20, 20)
+        painter.fillPath(bg_path, QBrush(gradient))
+        
+        # 顶部高光
+        highlight = QLinearGradient(0, 8, 0, 100)
+        highlight.setColorAt(0, QColor(255, 255, 255, 180))
+        highlight.setColorAt(1, QColor(255, 255, 255, 0))
+        painter.fillPath(bg_path, QBrush(highlight))
+    
+    def _draw_glow_border(self, painter):
+        """绘制发光边框效果"""
+        # 外发光
+        for i in range(3):
+            alpha = 30 - i * 10
+            pen = QPen(QColor(0, 122, 255, alpha), 2 + i)
+            pen.setJoinStyle(Qt.RoundJoin)
+            painter.setPen(pen)
+            painter.drawRoundedRect(8-i, 8-i, self.splash_w-16+i*2, self.splash_h-16+i*2, 20, 20)
+        
+        # 主边框
+        painter.setPen(QPen(QColor(200, 200, 205, 100), 1))
+        painter.drawRoundedRect(8, 8, self.splash_w-16, self.splash_h-16, 20, 20)
+    
+    def _draw_logo(self, painter):
+        """绘制动态Logo"""
+        center_x, center_y = self.splash_w // 2, 100
+        
+        # 绘制旋转的圆环
+        painter.save()
+        painter.translate(center_x, center_y)
+        painter.rotate(self._glow_offset * 2)
+        
+        # 外环渐变
+        ring_gradient = QConicalGradient(0, 0, 0)
+        ring_gradient.setColorAt(0, QColor(0, 122, 255, 200))
+        ring_gradient.setColorAt(0.25, QColor(88, 86, 214, 200))
+        ring_gradient.setColorAt(0.5, QColor(255, 55, 95, 200))
+        ring_gradient.setColorAt(0.75, QColor(255, 149, 0, 200))
+        ring_gradient.setColorAt(1, QColor(0, 122, 255, 200))
+        
+        pen = QPen(QBrush(ring_gradient), 4)
+        pen.setCapStyle(Qt.RoundCap)
+        painter.setPen(pen)
+        painter.drawArc(-35, -35, 70, 70, 0, 5760)
+        
+        painter.restore()
+        
+        # 中心图标
+        icon_gradient = QRadialGradient(center_x, center_y, 25)
+        icon_gradient.setColorAt(0, QColor(0, 122, 255))
+        icon_gradient.setColorAt(1, QColor(0, 100, 210))
+        
+        painter.setBrush(QBrush(icon_gradient))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(center_x-20, center_y-20, 40, 40)
+        
+        # 中心文字
+        painter.setPen(Qt.white)
+        painter.setFont(QFont("Microsoft YaHei", 16, QFont.Bold))
+        painter.drawText(center_x-20, center_y-20, 40, 40, Qt.AlignCenter, "转")
+    
+    def _draw_title(self, painter):
+        """绘制标题文字"""
+        # 主标题阴影
+        painter.setPen(QColor(0, 0, 0, 20))
+        painter.setFont(QFont("Microsoft YaHei", 28, QFont.Bold))
+        painter.drawText(self.splash_w//2 - 150 + 2, 162, 300, 50, Qt.AlignCenter, "格式转换工具")
+        
+        # 主标题
+        title_gradient = QLinearGradient(self.splash_w//2 - 150, 160, self.splash_w//2 + 150, 160)
+        title_gradient.setColorAt(0, QColor(29, 29, 31))
+        title_gradient.setColorAt(0.5, QColor(60, 60, 67))
+        title_gradient.setColorAt(1, QColor(29, 29, 31))
+        
+        painter.setPen(QPen(QBrush(title_gradient), 1))
+        painter.setFont(QFont("Microsoft YaHei", 28, QFont.Bold))
+        painter.drawText(self.splash_w//2 - 150, 160, 300, 50, Qt.AlignCenter, "格式转换工具")
+        
+        # 副标题
+        painter.setPen(QColor(134, 134, 139))
+        painter.setFont(QFont("Microsoft YaHei", 12))
+        painter.drawText(self.splash_w//2 - 150, 200, 300, 30, Qt.AlignCenter, "图片 · 视频 · 音乐 全能转换")
+    
+    def _draw_progress(self, painter):
+        """绘制进度条"""
+        bar_x, bar_y = 80, 260
+        bar_w, bar_h = self.splash_w - 160, 6
+        
+        # 背景条
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(229, 229, 234))
+        painter.drawRoundedRect(bar_x, bar_y, bar_w, bar_h, 3, 3)
+        
+        # 进度条渐变
+        progress_gradient = QLinearGradient(bar_x, 0, bar_x + bar_w, 0)
+        progress_gradient.setColorAt(0, QColor(0, 122, 255))
+        progress_gradient.setColorAt(0.5, QColor(88, 86, 214))
+        progress_gradient.setColorAt(1, QColor(0, 122, 255))
+        
+        painter.setBrush(QBrush(progress_gradient))
+        progress_width = int(bar_w * self._progress / 100)
+        if progress_width > 0:
+            painter.drawRoundedRect(bar_x, bar_y, progress_width, bar_h, 3, 3)
+        
+        # 进度文字
+        painter.setPen(QColor(134, 134, 139))
+        painter.setFont(QFont("Microsoft YaHei", 10))
+        painter.drawText(bar_x, bar_y + 20, bar_w, 20, Qt.AlignCenter, f"正在启动... {int(self._progress)}%")
+    
+    def _update_animation(self):
+        """更新动画"""
+        self._glow_offset += 1
+        if self._glow_offset >= 360:
+            self._glow_offset = 0
+        
+        # 模拟进度增长
+        if self._progress < 100:
+            self._progress += 1.5
+            if self._progress > 100:
+                self._progress = 100
+        
+        self._draw_splash()
+    
+    def finish(self, widget):
+        """结束启动画面并显示主窗口"""
+        # 淡出动画
+        self._fade_out_animation = QPropertyAnimation(self, b"windowOpacity")
+        self._fade_out_animation.setDuration(400)
+        self._fade_out_animation.setStartValue(1.0)
+        self._fade_out_animation.setEndValue(0.0)
+        self._fade_out_animation.setEasingCurve(QEasingCurve.OutCubic)
+        self._fade_out_animation.finished.connect(lambda: super().finish(widget))
+        self._fade_out_animation.start()
+
+
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     
-    # 简约启动画面
-    splash_w, splash_h = 360, 180
-    splash_pix = QPixmap(splash_w, splash_h)
-    splash_pix.fill(Qt.transparent)
-    
-    painter = QPainter(splash_pix)
-    painter.setRenderHint(QPainter.Antialiasing)
-    painter.setRenderHint(QPainter.TextAntialiasing)
-    
-    # 绘制背景 - 简约白色
-    bg_path = QPainterPath()
-    bg_path.addRoundedRect(0, 0, splash_w, splash_h, 12, 12)
-    painter.fillPath(bg_path, QBrush(QColor(255, 255, 255)))
-    
-    # 绘制边框
-    painter.setPen(QPen(QColor(229, 229, 234), 1))
-    painter.drawRoundedRect(0, 0, splash_w, splash_h, 12, 12)
-    
-    # 绘制主标题
-    painter.setPen(QColor(29, 29, 31))
-    painter.setFont(QFont("Microsoft YaHei", 24, QFont.Bold))
-    painter.drawText(splash_pix.rect().adjusted(0, -20, 0, 0), Qt.AlignCenter, "格式转换工具")
-    
-    # 绘制副标题
-    painter.setPen(QColor(134, 134, 139))
-    painter.setFont(QFont("Microsoft YaHei", 11))
-    painter.drawText(splash_pix.rect().adjusted(0, 30, 0, 0), Qt.AlignCenter, "Converter & Extractor")
-    
-    painter.end()
-    
-    splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
-    splash.setAttribute(Qt.WA_TranslucentBackground)
+    # 高级启动画面
+    splash = AnimatedSplashScreen()
     splash.show()
     
     # 应用现代化样式
@@ -2054,13 +2303,28 @@ def main():
     font = QFont("Microsoft YaHei", 10)
     app.setFont(font)
     
-    # 简化启动流程
+    # 处理事件以确保启动画面显示
+    app.processEvents()
+    
+    # 延迟显示主窗口，让启动动画播放
     def show_main():
         window = MainWindow()
         window.show()
-        splash.finish(window)
-
-    QTimer.singleShot(600, show_main)
+        
+        # 主窗口淡入动画
+        window.setWindowOpacity(0.0)
+        fade_in = QPropertyAnimation(window, b"windowOpacity")
+        fade_in.setDuration(500)
+        fade_in.setStartValue(0.0)
+        fade_in.setEndValue(1.0)
+        fade_in.setEasingCurve(QEasingCurve.OutCubic)
+        fade_in.start()
+        
+        # 结束启动画面
+        QTimer.singleShot(200, lambda: splash.finish(window))
+    
+    # 等待启动动画完成
+    QTimer.singleShot(1500, show_main)
     
     sys.exit(app.exec_())
 
