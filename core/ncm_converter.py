@@ -6,10 +6,8 @@ import os
 from pathlib import Path
 from typing import List, Tuple, Optional, Callable
 
-try:
-    from ncmdump import NeteaseCloudMusicFile
-except ImportError:
-    NeteaseCloudMusicFile = None
+# 直接导入，不捕获异常，确保 PyInstaller 能正确打包
+from ncmdump import NeteaseCloudMusicFile
 
 
 def is_ncm_file(filepath: str) -> bool:

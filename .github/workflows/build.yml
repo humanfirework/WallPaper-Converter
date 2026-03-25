@@ -48,7 +48,7 @@ jobs:
               pathex=[],
               binaries=[],
               datas=[],
-              hiddenimports=['PyQt5', 'PIL', 'PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets', 'ncmdump'],
+              hiddenimports=['PyQt5', 'PIL', 'PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWidgets', 'ncmdump', 'ncmdump.core', 'cryptography', 'cryptography.hazmat', 'cryptography.hazmat.primitives', 'cryptography.hazmat.primitives.ciphers', 'mutagen', 'mutagen.mp3', 'mutagen.flac', 'mutagen.id3'],
               hookspath=[],
               hooksconfig={},
               runtime_hooks=[],
