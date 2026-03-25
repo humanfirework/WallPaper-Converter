@@ -1,13 +1,24 @@
 """
 NCM 文件转换模块
-用于解密网易云音乐加密格式(.ncm)并转换为 MP3/FLAC
+用于解密网易云音乐加密格式 (.ncm) 并转换为 MP3/FLAC
 """
 import os
 from pathlib import Path
 from typing import List, Tuple, Optional, Callable
 
-# 直接导入，不捕获异常，确保 PyInstaller 能正确打包
-from ncmdump import NeteaseCloudMusicFile
+# 延迟导入，避免打包时找不到模块
+NeteaseCloudMusicFile = None
+
+def _get_ncmdump_class():
+    """获取 NeteaseCloudMusicFile 类"""
+    global NeteaseCloudMusicFile
+    if NeteaseCloudMusicFile is None:
+        try:
+            from ncmdump import NeteaseCloudMusicFile as NCMClass
+            NeteaseCloudMusicFile = NCMClass
+        except ImportError as e:
+            raise ImportError(f"未安装 ncmdump 库，请运行：pip install ncmdump。错误详情：{e}")
+    return NeteaseCloudMusicFile
 
 
 def is_ncm_file(filepath: str) -> bool:
@@ -57,15 +68,17 @@ def ncm_to_audio(
     Returns:
         (success, message)
     """
-    if NeteaseCloudMusicFile is None:
-        return False, "未安装 ncmdump 库，请运行: pip install ncmdump"
+    try:
+        NCMClass = _get_ncmdump_class()
+    except ImportError as e:
+        return False, str(e)
     
     try:
         if progress_callback:
             progress_callback("正在解密 NCM 文件...")
         
         # 解密 NCM 文件
-        ncm = NeteaseCloudMusicFile(input_path)
+        ncm = NCMClass(input_path)
         ncm.decrypt()
         
         # 获取音频格式
