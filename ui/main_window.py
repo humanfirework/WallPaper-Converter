@@ -1116,53 +1116,71 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(16)
         
-        # 应用标题
-        app_title = QLabel("WallPaper Converter")
-        app_title.setStyleSheet("""
-            font-size: 20px;
-            font-weight: 700;
-            color: #1d1d1f;
-            padding-bottom: 8px;
-        """)
-        layout.addWidget(app_title)
-        
-        # 分隔线
-        separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #e5e5ea; max-height: 1px;")
-        layout.addWidget(separator)
-        
-        # 高级导航按钮组
-        nav_container = QWidget()
-        nav_layout = QVBoxLayout(nav_container)
-        nav_layout.setContentsMargins(0, 8, 0, 8)
-        nav_layout.setSpacing(8)
+        # 简约模式切换 - 使用标签页风格
+        mode_container = QWidget()
+        mode_container.setStyleSheet("background: #f5f5f7; border-radius: 10px;")
+        mode_layout = QHBoxLayout(mode_container)
+        mode_layout.setContentsMargins(4, 4, 4, 4)
+        mode_layout.setSpacing(4)
         
         self.mode_group = QButtonGroup(self)
         
-        # 图片转换按钮
-        self.image_mode_btn = NavButton("图", "图片转换", "PNG/JPG/WebP 格式转换")
+        self.image_mode_btn = QRadioButton("图片转换")
         self.image_mode_btn.setChecked(True)
+        self.image_mode_btn.setStyleSheet("""
+            QRadioButton {
+                background: white;
+                border-radius: 6px;
+                padding: 8px 20px;
+                font-weight: 600;
+                color: #007aff;
+            }
+            QRadioButton:!checked {
+                background: transparent;
+                color: #86868b;
+            }
+            QRadioButton::indicator { width: 0; height: 0; }
+        """)
         self.mode_group.addButton(self.image_mode_btn, 0)
-        nav_layout.addWidget(self.image_mode_btn)
+        mode_layout.addWidget(self.image_mode_btn)
         
-        # MPKG 转换按钮
-        self.mpkg_mode_btn = NavButton("影", "MPKG 转 MP4", "提取 Wallpaper Engine 视频")
+        self.mpkg_mode_btn = QRadioButton("MPKG")
+        self.mpkg_mode_btn.setStyleSheet("""
+            QRadioButton {
+                background: white;
+                border-radius: 6px;
+                padding: 8px 20px;
+                font-weight: 600;
+                color: #007aff;
+            }
+            QRadioButton:!checked {
+                background: transparent;
+                color: #86868b;
+            }
+            QRadioButton::indicator { width: 0; height: 0; }
+        """)
         self.mode_group.addButton(self.mpkg_mode_btn, 1)
-        nav_layout.addWidget(self.mpkg_mode_btn)
+        mode_layout.addWidget(self.mpkg_mode_btn)
         
-        # NCM 转换按钮
-        self.ncm_mode_btn = NavButton("乐", "NCM 转 MP3", "网易云音乐格式解密")
+        self.ncm_mode_btn = QRadioButton("NCM")
+        self.ncm_mode_btn.setStyleSheet("""
+            QRadioButton {
+                background: white;
+                border-radius: 6px;
+                padding: 8px 20px;
+                font-weight: 600;
+                color: #007aff;
+            }
+            QRadioButton:!checked {
+                background: transparent;
+                color: #86868b;
+            }
+            QRadioButton::indicator { width: 0; height: 0; }
+        """)
         self.mode_group.addButton(self.ncm_mode_btn, 2)
-        nav_layout.addWidget(self.ncm_mode_btn)
+        mode_layout.addWidget(self.ncm_mode_btn)
         
-        layout.addWidget(nav_container)
-        
-        # 分隔线
-        separator2 = QFrame()
-        separator2.setFrameShape(QFrame.HLine)
-        separator2.setStyleSheet("background-color: #e5e5ea; max-height: 1px;")
-        layout.addWidget(separator2)
+        layout.addWidget(mode_container)
         
         # 标题区域
         self.title_label = QLabel("待转换图片")
@@ -2229,12 +2247,12 @@ class AnimatedSplashScreen(QSplashScreen):
         
         painter.setPen(QPen(QBrush(title_gradient), 1))
         painter.setFont(QFont("Microsoft YaHei", 28, QFont.Bold))
-        painter.drawText(self.splash_w//2 - 150, 160, 300, 50, Qt.AlignCenter, "格式转换工具")
+        painter.drawText(self.splash_w//2 - 140, 160, 300, 50, Qt.AlignCenter, "格式转换工具")
         
         # 副标题
         painter.setPen(QColor(134, 134, 139))
         painter.setFont(QFont("Microsoft YaHei", 12))
-        painter.drawText(self.splash_w//2 - 150, 200, 300, 30, Qt.AlignCenter, "图片 · 视频 · 音乐 全能转换")
+        painter.drawText(self.splash_w//2 - 150, 210, 300, 30, Qt.AlignCenter, "图片 · 视频 · 音乐 全能转换")
     
     def _draw_progress(self, painter):
         """绘制进度条"""
@@ -2284,7 +2302,7 @@ class AnimatedSplashScreen(QSplashScreen):
         self._fade_out_animation.setStartValue(1.0)
         self._fade_out_animation.setEndValue(0.0)
         self._fade_out_animation.setEasingCurve(QEasingCurve.OutCubic)
-        self._fade_out_animation.finished.connect(lambda: super().finish(widget))
+        self._fade_out_animation.finished.connect(lambda w=widget: QSplashScreen.finish(self, w))
         self._fade_out_animation.start()
 
 
